@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>IAT 색상-조절초점 실험</title>
+  <style>
+    html, body {
+      height: 100%;
+      width: 100vw;
+      margin: 0; padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      min-height: 100vh;
+      min-width: 100vw;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f6f7fb;
+      overflow-x: hidden;
+    }
+    #container {
+      width: 100vw;
+      height: 100vh;
+      min-width: 340px;
+      min-height: 550px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .centered-col {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .centered-row {
+      width: 95vw;
+      max-width: 900px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+    }
+    #intro, #idInputDiv, #experimentDiv, #stimRow, #result { display: none; }
+    #blockInfo, #result {
+      font-size: 1.15rem;
+      color: #1841ad;
+      text-align: center;
+      margin-bottom: 18px;
+      margin-top: 18px;
+      width: 100%;
+    }
+    #blockTitle { font-size: 1.7rem; font-weight: bold; margin-bottom: 18px; }
+    #blockDesc { font-size: 1.22rem; margin-bottom: 10px; }
+    .hint { font-size:1.09rem; color:gray; margin-top:15px; text-align: center;}
+    #idSubmitBtn, #startBtn {
+      font-size: 1.23rem;
+      padding: 13px 38px;
+      margin: 30px auto 12px auto;
+      border-radius: 22px;
+      background: #4666dd;
+      color: white;
+      border: none;
+      cursor: pointer;
+      display: block;
+      box-shadow: 0 2px 12px #ccc3;
+      transition: background 0.2s;
+      text-align: center;
+    }
+    #idSubmitBtn:hover, #startBtn:hover { background: #2244aa; }
+    input[type="text"] {
+      text-align: center;
+      font-size: 1.18rem;
+      padding: 7px 14px;
+      border-radius: 11px;
+      border: 1.5px solid #b1b9cc;
+      margin-top: 8px;
+      margin-bottom: 18px;
+    }
+    #stimRow {
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 5vw;
+      min-height: 150px;
+      margin-top: 18px;
+      margin-bottom: 12px;
+    }
+    .side-label {
+      min-width: 170px;
+      max-width: 260px;
+      font-size: 1.20rem;
+      font-weight: bold;
+      color: #224489;
+      border-radius: 18px;
+      padding: 20px 14px;
+      background: #f0f3ff;
+      text-align: center;
+      align-self: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+    #stim-center {
+      width: 180px; min-width:130px; max-width:210px;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; text-align: center;
+      margin: 0 2vw;
+    }
+    .stim-text {
+      font-size: 2.9rem; font-weight: 600;
+      color: #1e2233; letter-spacing:2px;
+      text-align: center; width: 100%;
+    }
+    .stim-color {
+      width: 88px; height: 88px;
+      border-radius: 16px;
+      border: 2.5px solid #bbb;
+      display: inline-block;
+      margin: 0 auto;
+    }
+    #result { white-space: pre-line; margin-top: 20px;}
+    /* 모바일 최적화 */
+    @media (max-width:700px) {
+      #stimRow { gap: 2vw; }
+      .side-label { min-width:80px; font-size:1.05rem; padding:10px 2px;}
+      #stim-center { width:90px; min-width:70px;}
+      .stim-text { font-size:2rem; }
+      .stim-color { width:50px; height:50px;}
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <!-- 안내: intro -->
+    <div id="intro" class="centered-col">
+      <h2>실험 안내</h2>
+      <div>
+        안녕하세요. 실험에 참가해주셔서 감사합니다.<br>
+        본 실험은 색깔과 단어의 연합 정도를 확인하는 과제입니다.<br>
+        안내에 따라서 <b>적절한 반응 키를 최대한 빠르게</b> 눌러주세요.<br>
+      </div>
+      <div class="hint" style="margin-top:24px;">스페이스바를 눌러 진행하세요.</div>
+    </div>
+    <!-- 참가자 번호 입력 -->
+    <div id="idInputDiv" class="centered-col">
+      <h3>참가자 번호를 입력해주세요</h3>
+      <input type="text" id="participantIdInput" placeholder="예: 20240123" maxlength="20">
+      <button id="idSubmitBtn" onclick="submitId()">확인</button>
+    </div>
+    <!-- 실험진행 -->
+    <div id="experimentDiv" class="centered-col">
+      <div id="blockInfo">
+        <div id="blockTitle"></div>
+        <div id="blockDesc"></div>
+        <div id="blockHint" class="hint"></div>
+      </div>
+      <div id="stimRow">
+        <div class="side-label" id="leftLabel"></div>
+        <div id="stim-center">
+          <div id="stimulus"></div>
+        </div>
+        <div class="side-label" id="rightLabel"></div>
+      </div>
+      <div id="result"></div>
+    </div>
+  </div>
+  <script>
+    // 색상명-hex 변환(한글 → 실제 색상)
+    const colorMap = {
+      "파랑": "#296be7",
+      "빨강": "#f04d45",
+      "초록": "#33b44a",
+      "보라": "#9c60b6"
+    };
+    let state = "intro";
+    let participantId = "";
+    let approachWords = ["희망", "성장", "진보", "성취"];
+    let avoidanceWords = ["안전", "보호", "예방", "안정"];
+    let blueRed = ["파랑", "빨강"];
+    let purpleGreen = ["보라", "초록"];
+    let blocks = [
+      { blockNum: 1, right: { motive: "approach", colors: blueRed }, left:  { motive: "avoidance", colors: purpleGreen }, congruent: true },
+      { blockNum: 2, right: { motive: "avoidance", colors: blueRed }, left:  { motive: "approach", colors: purpleGreen }, congruent: false },
+      { blockNum: 3, right: { motive: "approach", colors: purpleGreen }, left:  { motive: "avoidance", colors: blueRed }, congruent: true },
+      { blockNum: 4, right: { motive: "avoidance", colors: purpleGreen }, left:  { motive: "approach", colors: blueRed }, congruent: false }
+    ];
+    let motiveLabel = { approach: "접근동기", avoidance: "회피동기" };
+    let wordRepeat = 2;
+    let sessionTrials = [];
+    let blockResults = [];
+    let curBlockIdx = 0;
+    let curTrialIdx = 0;
+    let startTime = 0;
+    let running = false;
+
+    function showSection(section) {
+      document.getElementById('intro').style.display = section === "intro" ? 'flex' : 'none';
+      document.getElementById('idInputDiv').style.display = section === "idInput" ? 'flex' : 'none';
+      document.getElementById('experimentDiv').style.display =
+        (section === "blockIntro" || section === "running" || section === "blockEnd" || section === "experimentEnd")
+        ? 'flex' : 'none';
+      document.getElementById('blockInfo').style.display = (section === "blockIntro") ? 'block' : 'none';
+      document.getElementById('stimRow').style.display = (section === "running") ? 'flex' : 'none';
+      document.getElementById('result').style.display = (section === "blockEnd" || section === "experimentEnd") ? 'block' : 'none';
+    }
+
+    function showIdInput() {
+      state = "idInput";
+      showSection("idInput");
+      document.getElementById('participantIdInput').focus();
+    }
+
+    function submitId() {
+      const id = document.getElementById('participantIdInput').value.trim();
+      if (!id) {
+        alert("참가자 번호를 입력해주세요.");
+        document.getElementById('participantIdInput').focus();
+        return;
+      }
+      participantId = id;
+      state = "blockIntro";
+      showSection("blockIntro");
+      curBlockIdx = 0;
+      blockResults = [];
+      showBlockInfo();
+    }
+
+    function startExperimentBlock() {
+      sessionTrials = [];
+      curTrialIdx = 0;
+      running = true;
+      let blk = blocks[curBlockIdx];
+      let trials = [];
+      for(let r=0;r<wordRepeat;r++) {
+        blk.left.colors.forEach(color => {
+          trials.push({stimulus: color, type: "color", correct: "a", motive: blk.left.motive, colorGroup: color});
+        });
+        blk.right.colors.forEach(color => {
+          trials.push({stimulus: color, type: "color", correct: "l", motive: blk.right.motive, colorGroup: color});
+        });
+        (blk.left.motive === "approach" ? approachWords : avoidanceWords).forEach(word => {
+          trials.push({stimulus: word, type: "word", correct: "a", motive: blk.left.motive, colorGroup: null});
+        });
+        (blk.right.motive === "approach" ? approachWords : avoidanceWords).forEach(word => {
+          trials.push({stimulus: word, type: "word", correct: "l", motive: blk.right.motive, colorGroup: null});
+        });
+      }
+      shuffle(trials);
+      sessionTrials = trials;
+      state = "running";
+      showSection("running");
+      showStimRow();
+      nextTrial();
+    }
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    function showBlockInfo() {
+      let blk = blocks[curBlockIdx];
+      document.getElementById('blockTitle').innerHTML = `세션 ${blk.blockNum} 안내`;
+      document.getElementById('blockDesc').innerHTML =
+        `왼쪽(A): ${motiveLabel[blk.left.motive]} (${blk.left.colors.join(" & ")}) &nbsp;&nbsp; | &nbsp;&nbsp; 오른쪽(L): ${motiveLabel[blk.right.motive]} (${blk.right.colors.join(" & ")})`;
+      document.getElementById('blockHint').innerHTML = `<br>스페이스바를 눌러 시작하세요.<br><br><b style="color:#4666dd;">[A] = 왼쪽, [L] = 오른쪽</b>`;
+      document.getElementById('result').innerText = "";
+      document.getElementById('leftLabel').innerHTML =
+        `${motiveLabel[blk.left.motive]}<br>${blk.left.colors.join(" & ")}`;
+      document.getElementById('rightLabel').innerHTML =
+        `${motiveLabel[blk.right.motive]}<br>${blk.right.colors.join(" & ")}`;
+      document.getElementById('stimulus').innerHTML = '';
+    }
+
+    function showStimRow() {
+      document.getElementById('stimRow').style.display = 'flex';
+      document.getElementById('result').style.display = 'none';
+    }
+
+    function nextTrial() {
+      const stimDiv = document.getElementById('stimulus');
+      stimDiv.innerHTML = '';
+      if (curTrialIdx >= sessionTrials.length) {
+        running = false;
+        blockResults.push({
+          blockNum: blocks[curBlockIdx].blockNum,
+          congruent: blocks[curBlockIdx].congruent,
+          trials: sessionTrials
+        });
+        state = "blockEnd";
+        showSection("blockEnd");
+        document.getElementById('result').innerHTML =
+          `세션 ${blocks[curBlockIdx].blockNum} 종료!<br><br>스페이스바를 눌러 다음 세션으로 진행하세요.<br><br><b style="color:#4666dd;">[A] = 왼쪽, [L] = 오른쪽</b>`;
+        return;
+      }
+      let stim = sessionTrials[curTrialIdx];
+      // 중앙에 "색"은 사각형, "단어"는 글자
+      if (stim.type === "color" && colorMap[stim.stimulus]) {
+        let colorBox = document.createElement("div");
+        colorBox.className = "stim-color";
+        colorBox.style.background = colorMap[stim.stimulus];
+        stimDiv.appendChild(colorBox);
+      } else {
+        let wordSpan = document.createElement("span");
+        wordSpan.className = "stim-text";
+        wordSpan.textContent = stim.stimulus;
+        stimDiv.appendChild(wordSpan);
+      }
+      // 반응키 안내 추가
+      let respGuide = document.createElement("div");
+      respGuide.style.marginTop = "17px";
+      respGuide.style.fontSize = "1.09rem";
+      respGuide.style.color = "#4666dd";
+      respGuide.innerHTML = "<b>[A] = 왼쪽, [L] = 오른쪽</b>";
+      stimDiv.appendChild(respGuide);
+
+      startTime = performance.now();
+    }
+
+    document.addEventListener('keydown', function(event) {
+      if (state === "intro" && event.code === "Space") {
+        showIdInput();
+        event.preventDefault();
+      }
+      else if (state === "blockIntro" && event.code === "Space") {
+        startExperimentBlock();
+        event.preventDefault();
+      }
+      else if (state === "running" && (event.key === "a" || event.key === "l")) {
+        let stim = sessionTrials[curTrialIdx];
+        let rt = performance.now() - startTime;
+        stim.response = event.key;
+        stim.rt = rt;
+        stim.signal = (stim.motive === "approach");
+        stim.isCorrect = (stim.correct === event.key);
+        curTrialIdx++;
+        nextTrial();
+        event.preventDefault();
+      }
+      else if (state === "blockEnd" && event.code === "Space") {
+        curBlockIdx++;
+        if (curBlockIdx < blocks.length) {
+          state = "blockIntro";
+          showSection("blockIntro");
+          showBlockInfo();
+        } else {
+          state = "experimentEnd";
+          showSection("experimentEnd");
+          onExperimentEnd();
+        }
+        event.preventDefault();
+      }
+      else if (state === "experimentEnd" && event.code === "Space") {
+        event.preventDefault();
+      }
+    });
+
+    function calcDPrime(trials) {
+      const hit  = trials.filter(t => t.signal && t.response === t.correct).length;
+      const miss = trials.filter(t => t.signal && t.response !== t.correct).length;
+      const fa   = trials.filter(t => !t.signal && t.response === t.correct).length;
+      const cr   = trials.filter(t => !t.signal && t.response !== t.correct).length;
+      const adj = 0.5;
+      const nSignal = hit + miss;
+      const nNoise = fa + cr;
+      const hitRate = (hit + adj) / (nSignal + 1);
+      const faRate = (fa + adj) / (nNoise + 1);
+      function erfinv(x) {
+        var a = 0.147;
+        var the_sign_of_x = x < 0 ? -1 : 1;
+        var ln1MinusXSquared = Math.log(1 - x * x);
+        var firstTerm = (2 / (Math.PI * a)) + (ln1MinusXSquared / 2);
+        var secondTerm = ln1MinusXSquared / a;
+        var innerSqrt = Math.sqrt((firstTerm * firstTerm) - secondTerm);
+        return the_sign_of_x * Math.sqrt(innerSqrt - firstTerm);
+      }
+      function z(p) { return Math.sqrt(2) * erfinv(2 * p - 1); }
+      const dPrime = z(hitRate) - z(faRate);
+      return dPrime;
+    }
+    function calcAccuracy(trials) {
+      if (trials.length === 0) return 0;
+      const correctCount = trials.filter(t => t.isCorrect).length;
+      return correctCount / trials.length;
+    }
+
+    function downloadResult(trials, accCong, accIncong, dPrimeCong, dPrimeIncong, participantId) {
+      let content = "blockNum,congruent,stimulus,type,correct,response,rt,motive,colorGroup,signal,isCorrect\n";
+      trials.forEach(t => {
+        content += [
+          t.blockNum, t.congruent, t.stimulus, t.type, t.correct,
+          t.response, t.rt, t.motive, t.colorGroup, t.signal, t.isCorrect
+        ].join(",") + "\n";
+      });
+      content += `acc_congruent,${accCong}\nacc_incongruent,${accIncong}\n`;
+      content += `dPrime_congruent,${dPrimeCong}\ndPrime_incongruent,${dPrimeIncong}\n`;
+      let blob = new Blob([content], {type: "text/csv"});
+      let link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = participantId + ".csv";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function onExperimentEnd() {
+      const congruentTrials = blockResults.filter(b => b.congruent)
+        .flatMap(b => b.trials);
+      const incongruentTrials = blockResults.filter(b => !b.congruent)
+        .flatMap(b => b.trials);
+      const accCong = calcAccuracy(congruentTrials);
+      const accIncong = calcAccuracy(incongruentTrials);
+      const dPrimeCong = calcDPrime(congruentTrials);
+      const dPrimeIncong = calcDPrime(incongruentTrials);
+
+      document.getElementById('result').innerHTML =
+        `실험 종료!<br>` +
+        `일치 세션 - 정답률: ${(accCong*100).toFixed(1)}%, d': ${dPrimeCong.toFixed(2)}<br>` +
+        `불일치 세션 - 정답률: ${(accIncong*100).toFixed(1)}%, d': ${dPrimeIncong.toFixed(2)}<br><br>` +
+        `결과 파일이 곧 다운로드됩니다.<br>파일을 구글드라이브에 업로드 해주세요.<br><br><b style="color:#4666dd;">[A] = 왼쪽, [L] = 오른쪽</b>`;
+
+      let allTrials = blockResults.flatMap(b => b.trials.map(t => ({
+        blockNum: b.blockNum,
+        congruent: b.congruent,
+        ...t
+      })));
+      downloadResult(allTrials, accCong, accIncong, dPrimeCong, dPrimeIncong, participantId);
+    }
+
+    // 최초 intro
+    state = "intro";
+    showSection("intro");
+  </script>
+</body>
+</html>
