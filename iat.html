@@ -130,7 +130,6 @@
       margin: 0 auto;
     }
     #result { white-space: pre-line; margin-top: 20px;}
-    /* 모바일 최적화 */
     @media (max-width:700px) {
       #stimRow { gap: 2vw; }
       .side-label { min-width:80px; font-size:1.05rem; padding:10px 2px;}
@@ -155,7 +154,7 @@
     <!-- 참가자 번호 입력 -->
     <div id="idInputDiv" class="centered-col">
       <h3>참가자 번호를 입력해주세요</h3>
-      <input type="text" id="participantIdInput" placeholder="예: 1000" maxlength="20">
+      <input type="text" id="participantIdInput" placeholder="예: 20240123" maxlength="20">
       <button id="idSubmitBtn" onclick="submitId()">확인</button>
     </div>
     <!-- 실험진행 -->
@@ -176,33 +175,44 @@
     </div>
   </div>
   <script>
-    // 색상명-hex 변환(한글 → 실제 색상)
+    // 색상명-hex 변환
     const colorMap = {
       "파랑": "#296be7",
       "빨강": "#f04d45",
       "초록": "#33b44a",
       "보라": "#9c60b6"
     };
-    let state = "intro";
-    let participantId = "";
     let approachWords = ["희망", "성장", "진보", "성취"];
     let avoidanceWords = ["안전", "보호", "예방", "안정"];
     let blueRed = ["파랑", "빨강"];
     let purpleGreen = ["보라", "초록"];
-    let blocks = [
+    let mainBlocks = [
       { blockNum: 1, right: { motive: "approach", colors: blueRed }, left:  { motive: "avoidance", colors: purpleGreen }, congruent: true },
       { blockNum: 2, right: { motive: "avoidance", colors: blueRed }, left:  { motive: "approach", colors: purpleGreen }, congruent: false },
       { blockNum: 3, right: { motive: "approach", colors: purpleGreen }, left:  { motive: "avoidance", colors: blueRed }, congruent: true },
       { blockNum: 4, right: { motive: "avoidance", colors: purpleGreen }, left:  { motive: "approach", colors: blueRed }, congruent: false }
     ];
     let motiveLabel = { approach: "접근동기", avoidance: "회피동기" };
-    let wordRepeat = 2;
+    let wordRepeat = 2;         // 본실험 반복수
+    let practiceRepeat = 1;     // 훈련 반복수 (조정 가능)
+    let blockList = [];
+    mainBlocks.forEach((blk, idx) => {
+      // 훈련1: 단어
+      blockList.push({ ...blk, blockType:"word-practice", practiceNum:1, session:idx+1 });
+      // 훈련2: 색
+      blockList.push({ ...blk, blockType:"color-practice", practiceNum:2, session:idx+1 });
+      // 본실험
+      blockList.push({ ...blk, blockType:"main", practiceNum:null, session:idx+1 });
+    });
+
     let sessionTrials = [];
     let blockResults = [];
     let curBlockIdx = 0;
     let curTrialIdx = 0;
     let startTime = 0;
     let running = false;
+    let state = "intro";
+    let participantId = "";
 
     function showSection(section) {
       document.getElementById('intro').style.display = section === "intro" ? 'flex' : 'none';
@@ -215,19 +225,10 @@
       document.getElementById('result').style.display = (section === "blockEnd" || section === "experimentEnd") ? 'block' : 'none';
     }
 
-    function showIdInput() {
-      state = "idInput";
-      showSection("idInput");
-      document.getElementById('participantIdInput').focus();
-    }
-
+    function showIdInput() { state = "idInput"; showSection("idInput"); document.getElementById('participantIdInput').focus(); }
     function submitId() {
       const id = document.getElementById('participantIdInput').value.trim();
-      if (!id) {
-        alert("참가자 번호를 입력해주세요.");
-        document.getElementById('participantIdInput').focus();
-        return;
-      }
+      if (!id) { alert("참가자 번호를 입력해주세요."); document.getElementById('participantIdInput').focus(); return; }
       participantId = id;
       state = "blockIntro";
       showSection("blockIntro");
@@ -240,21 +241,43 @@
       sessionTrials = [];
       curTrialIdx = 0;
       running = true;
-      let blk = blocks[curBlockIdx];
+      let blk = blockList[curBlockIdx];
       let trials = [];
-      for(let r=0;r<wordRepeat;r++) {
-        blk.left.colors.forEach(color => {
-          trials.push({stimulus: color, type: "color", correct: "a", motive: blk.left.motive, colorGroup: color});
-        });
-        blk.right.colors.forEach(color => {
-          trials.push({stimulus: color, type: "color", correct: "l", motive: blk.right.motive, colorGroup: color});
-        });
-        (blk.left.motive === "approach" ? approachWords : avoidanceWords).forEach(word => {
-          trials.push({stimulus: word, type: "word", correct: "a", motive: blk.left.motive, colorGroup: null});
-        });
-        (blk.right.motive === "approach" ? approachWords : avoidanceWords).forEach(word => {
-          trials.push({stimulus: word, type: "word", correct: "l", motive: blk.right.motive, colorGroup: null});
-        });
+      if (blk.blockType === "word-practice") {
+        let leftWords = (blk.left.motive === "approach" ? approachWords : avoidanceWords);
+        let rightWords = (blk.right.motive === "approach" ? approachWords : avoidanceWords);
+        for(let r=0;r<practiceRepeat;r++) {
+          leftWords.forEach(word => {
+            trials.push({stimulus: word, type: "word", correct: "a", motive: blk.left.motive, colorGroup: null});
+          });
+          rightWords.forEach(word => {
+            trials.push({stimulus: word, type: "word", correct: "l", motive: blk.right.motive, colorGroup: null});
+          });
+        }
+      } else if (blk.blockType === "color-practice") {
+        for(let r=0;r<practiceRepeat;r++) {
+          blk.left.colors.forEach(color => {
+            trials.push({stimulus: color, type: "color", correct: "a", motive: null, colorGroup: color});
+          });
+          blk.right.colors.forEach(color => {
+            trials.push({stimulus: color, type: "color", correct: "l", motive: null, colorGroup: color});
+          });
+        }
+      } else if (blk.blockType === "main") {
+        for(let r=0;r<wordRepeat;r++) {
+          blk.left.colors.forEach(color => {
+            trials.push({stimulus: color, type: "color", correct: "a", motive: blk.left.motive, colorGroup: color});
+          });
+          blk.right.colors.forEach(color => {
+            trials.push({stimulus: color, type: "color", correct: "l", motive: blk.right.motive, colorGroup: color});
+          });
+          (blk.left.motive === "approach" ? approachWords : avoidanceWords).forEach(word => {
+            trials.push({stimulus: word, type: "word", correct: "a", motive: blk.left.motive, colorGroup: null});
+          });
+          (blk.right.motive === "approach" ? approachWords : avoidanceWords).forEach(word => {
+            trials.push({stimulus: word, type: "word", correct: "l", motive: blk.right.motive, colorGroup: null});
+          });
+        }
       }
       shuffle(trials);
       sessionTrials = trials;
@@ -272,16 +295,36 @@
     }
 
     function showBlockInfo() {
-      let blk = blocks[curBlockIdx];
-      document.getElementById('blockTitle').innerHTML = `세션 ${blk.blockNum} 안내`;
-      document.getElementById('blockDesc').innerHTML =
-        `왼쪽(A): ${motiveLabel[blk.left.motive]} (${blk.left.colors.join(" & ")}) &nbsp;&nbsp; | &nbsp;&nbsp; 오른쪽(L): ${motiveLabel[blk.right.motive]} (${blk.right.colors.join(" & ")})`;
-      document.getElementById('blockHint').innerHTML = `<br>스페이스바를 눌러 시작하세요.<br><br><b style="color:#4666dd;">[A] = 왼쪽, [L] = 오른쪽</b>`;
+      let blk = blockList[curBlockIdx];
+      let title = "";
+      let desc = "";
+      let hint = "<br>스페이스바를 눌러 시작하세요.<br><br><b style='color:#4666dd;'>[A] = 왼쪽, [L] = 오른쪽</b>";
+      if(blk.blockType === "word-practice") {
+        title = `세션 ${blk.session} 훈련 1: 단어 분류 연습`;
+        desc = `왼쪽(A): ${motiveLabel[blk.left.motive]}<br>오른쪽(L): ${motiveLabel[blk.right.motive]}<br><br>가운데 제시되는 단어가 어느 쪽에 속하는지 빠르게 반응하세요.`;
+      } else if(blk.blockType === "color-practice") {
+        title = `세션 ${blk.session} 훈련 2: 색 분류 연습`;
+        desc = `왼쪽(A): ${blk.left.colors.join(" & ")}<br>오른쪽(L): ${blk.right.colors.join(" & ")}<br><br>가운데 제시되는 색이 어느 쪽에 속하는지 빠르게 반응하세요.`;
+      } else if(blk.blockType === "main") {
+        title = `세션 ${blk.session} 본실험`;
+        desc = `왼쪽(A): ${motiveLabel[blk.left.motive]} (${blk.left.colors.join(" & ")})<br>오른쪽(L): ${motiveLabel[blk.right.motive]} (${blk.right.colors.join(" & ")})<br><br>가운데 단어 또는 색이 어느 쪽에 속하는지 빠르게 반응하세요.`;
+      }
+      document.getElementById('blockTitle').innerHTML = title;
+      document.getElementById('blockDesc').innerHTML = desc;
+      document.getElementById('blockHint').innerHTML = hint;
       document.getElementById('result').innerText = "";
       document.getElementById('leftLabel').innerHTML =
-        `${motiveLabel[blk.left.motive]}<br>${blk.left.colors.join(" & ")}`;
+        blk.blockType === "word-practice"
+          ? motiveLabel[blk.left.motive]
+          : (blk.blockType === "color-practice"
+             ? blk.left.colors.join(" & ")
+             : `${motiveLabel[blk.left.motive]}<br>${blk.left.colors.join(" & ")}`);
       document.getElementById('rightLabel').innerHTML =
-        `${motiveLabel[blk.right.motive]}<br>${blk.right.colors.join(" & ")}`;
+        blk.blockType === "word-practice"
+          ? motiveLabel[blk.right.motive]
+          : (blk.blockType === "color-practice"
+             ? blk.right.colors.join(" & ")
+             : `${motiveLabel[blk.right.motive]}<br>${blk.right.colors.join(" & ")}`);
       document.getElementById('stimulus').innerHTML = '';
     }
 
@@ -295,19 +338,20 @@
       stimDiv.innerHTML = '';
       if (curTrialIdx >= sessionTrials.length) {
         running = false;
+        let blk = blockList[curBlockIdx];
         blockResults.push({
-          blockNum: blocks[curBlockIdx].blockNum,
-          congruent: blocks[curBlockIdx].congruent,
+          blockNum: blk.session,
+          blockType: blk.blockType,
+          congruent: blk.congruent,
           trials: sessionTrials
         });
         state = "blockEnd";
         showSection("blockEnd");
         document.getElementById('result').innerHTML =
-          `세션 ${blocks[curBlockIdx].blockNum} 종료!<br><br>스페이스바를 눌러 다음 세션으로 진행하세요.<br><br><b style="color:#4666dd;">[A] = 왼쪽, [L] = 오른쪽</b>`;
+          `세션 ${blk.session} ${blk.blockType === "main" ? "본실험" : (blk.blockType === "word-practice" ? "훈련1(단어)" : "훈련2(색)") } 종료!<br><br>스페이스바를 눌러 다음으로 진행하세요.<br><br><b style="color:#4666dd;">[A] = 왼쪽, [L] = 오른쪽</b>`;
         return;
       }
       let stim = sessionTrials[curTrialIdx];
-      // 중앙에 "색"은 사각형, "단어"는 글자
       if (stim.type === "color" && colorMap[stim.stimulus]) {
         let colorBox = document.createElement("div");
         colorBox.className = "stim-color";
@@ -319,14 +363,12 @@
         wordSpan.textContent = stim.stimulus;
         stimDiv.appendChild(wordSpan);
       }
-      // 반응키 안내 추가
       let respGuide = document.createElement("div");
       respGuide.style.marginTop = "17px";
       respGuide.style.fontSize = "1.09rem";
       respGuide.style.color = "#4666dd";
       respGuide.innerHTML = "<b>[A] = 왼쪽, [L] = 오른쪽</b>";
       stimDiv.appendChild(respGuide);
-
       startTime = performance.now();
     }
 
@@ -352,7 +394,7 @@
       }
       else if (state === "blockEnd" && event.code === "Space") {
         curBlockIdx++;
-        if (curBlockIdx < blocks.length) {
+        if (curBlockIdx < blockList.length) {
           state = "blockIntro";
           showSection("blockIntro");
           showBlockInfo();
@@ -398,10 +440,10 @@
     }
 
     function downloadResult(trials, accCong, accIncong, dPrimeCong, dPrimeIncong, participantId) {
-      let content = "blockNum,congruent,stimulus,type,correct,response,rt,motive,colorGroup,signal,isCorrect\n";
+      let content = "blockNum,blockType,congruent,stimulus,type,correct,response,rt,motive,colorGroup,signal,isCorrect\n";
       trials.forEach(t => {
         content += [
-          t.blockNum, t.congruent, t.stimulus, t.type, t.correct,
+          t.blockNum, t.blockType, t.congruent, t.stimulus, t.type, t.correct,
           t.response, t.rt, t.motive, t.colorGroup, t.signal, t.isCorrect
         ].join(",") + "\n";
       });
@@ -417,9 +459,10 @@
     }
 
     function onExperimentEnd() {
-      const congruentTrials = blockResults.filter(b => b.congruent)
+      // 본실험 블록만 집계
+      const congruentTrials = blockResults.filter(b => b.blockType==="main" && b.congruent)
         .flatMap(b => b.trials);
-      const incongruentTrials = blockResults.filter(b => !b.congruent)
+      const incongruentTrials = blockResults.filter(b => b.blockType==="main" && !b.congruent)
         .flatMap(b => b.trials);
       const accCong = calcAccuracy(congruentTrials);
       const accIncong = calcAccuracy(incongruentTrials);
@@ -432,8 +475,10 @@
         `불일치 세션 - 정답률: ${(accIncong*100).toFixed(1)}%, d': ${dPrimeIncong.toFixed(2)}<br><br>` +
         `결과 파일이 곧 다운로드됩니다.<br>파일을 구글드라이브에 업로드 해주세요.<br><br><b style="color:#4666dd;">[A] = 왼쪽, [L] = 오른쪽</b>`;
 
+      // 전체 데이터 저장 (훈련 블록도 포함)
       let allTrials = blockResults.flatMap(b => b.trials.map(t => ({
         blockNum: b.blockNum,
+        blockType: b.blockType,
         congruent: b.congruent,
         ...t
       })));
